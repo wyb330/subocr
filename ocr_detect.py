@@ -4,29 +4,25 @@
 # @File: predict.py
 
 import cv2
-import argparse
 import numpy as np
-import tensorflow as tf
-from keras.layers import Input
-from keras.models import Model
-from detection.net.vgg16 import VGG16_UNet
 from detection.utils.inference_util import getDetBoxes, adjustResultCoordinates
 from detection.utils.img_util import load_image, img_resize, img_normalize, to_heat_map
+from collections import namedtuple
 
 
-parser = argparse.ArgumentParser(description='CRAFT Text Detection')
-parser.add_argument('--trained_model', default='./model/craft/weight.h5', type=str, help='pretrained model')
-parser.add_argument('--text_threshold', default=0.7, type=float, help='text confidence threshold')
-parser.add_argument('--low_text', default=0.4, type=float, help='text low-bound score')
-parser.add_argument('--link_threshold', default=0.4, type=float, help='link confidence threshold')
-parser.add_argument('--canvas_size', default=1920, type=int, help='image size for inference')
-parser.add_argument('--image_file', default=r'd:/data/subtitle/kr/test/real_images/text/screen1.png',
-                    type=str, help='input image')
-
-FLAGS = parser.parse_args()
+CraftFlags = namedtuple('CraftFlags', 'trained_model text_threshold low_text link_threshold canvas_size image_file')
+FLAGS = CraftFlags(trained_model='./model/craft/weight.h5',
+                   text_threshold=0.7,
+                   low_text=0.4,
+                   link_threshold=0.4,
+                   canvas_size=1920,
+                   image_file='')
 
 
-def predict(model, image, text_threshold, link_threshold, low_text):
+def predict(model, image):
+    text_threshold = FLAGS.text_threshold
+    link_threshold = FLAGS.link_threshold
+    low_text = FLAGS.low_text
     h, w = image.shape[:2]
     if (h < 10) or (w < 10):
         return [], []
@@ -56,38 +52,11 @@ def predict(model, image, text_threshold, link_threshold, low_text):
 
 def detect(model, image_file):
     image = load_image(image_file)
-    bboxes, score_text = predict(model, image, FLAGS.text_threshold, FLAGS.link_threshold, FLAGS.low_text)
+    bboxes, score_text = predict(model, image)
     return bboxes
 
 
 def detect_img(model, image):
-    bboxes, score_text = predict(model, image, FLAGS.text_threshold, FLAGS.link_threshold, FLAGS.low_text)
+    bboxes, score_text = predict(model, image)
     return bboxes
 
-
-def load_detect_model(model_path):
-    print('loading saved ocr detection model from - {}'.format(model_path))
-    input_image = Input(shape=(None, None, 3), name='image', dtype=tf.float32)
-    region, affinity = VGG16_UNet(input_tensor=input_image, weights=None)
-    model = Model(inputs=[input_image], outputs=[region, affinity])
-    model.load_weights(model_path)
-    model._make_predict_function()
-
-    return model
-
-
-def main():
-    """ Load model """
-    input_image = Input(shape=(None, None, 3), name='image', dtype=tf.float32)
-    region, affinity = VGG16_UNet(input_tensor=input_image, weights=None)
-    model = Model(inputs=[input_image], outputs=[region, affinity])
-    model.load_weights(FLAGS.trained_model)
-
-    image_file = FLAGS.image_file
-    image = load_image(image_file)
-    bboxes, score_text = predict(model, image, FLAGS.text_threshold, FLAGS.link_threshold, FLAGS.low_text)
-    return bboxes
-
-
-if __name__ == '__main__':
-    main()

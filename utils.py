@@ -1,6 +1,5 @@
 import uuid
 import io
-import ocr_detect
 import numpy as np
 import cv2
 from PIL import Image, ImageDraw, ImageFont
@@ -21,14 +20,6 @@ def img2bytes(img, format='JPEG'):
     img.save(img_bytes, format=format)
     img_bytes = img_bytes.getvalue()
     return img_bytes
-
-
-def run_detect(detect_model, img_file):
-    return ocr_detect.detect(detect_model, img_file)
-
-
-def run_detect_image(detect_model, image):
-    return ocr_detect.detect_img(detect_model, image)
 
 
 def get_2points(box):

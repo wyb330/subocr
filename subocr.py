@@ -8,6 +8,10 @@ from utils import cv2pil, sub_image
 import ocr_detect
 import tqdm
 import tensorflow as tf
+from argparse import ArgumentParser
+from keras.layers import Input
+from keras.models import Model
+from detection.net.vgg16 import VGG16_UNet
 
 MARGIN = 8
 VOBTIMECODE1 = '(#\d+:)(\d+:*\d+,\d+->\d+:\d+,\d+)(.)*'
@@ -16,7 +20,7 @@ VOBTIMECODE3 = '(#\d+:)(\d+,\d+->\d+,\d+)(.)*'
 
 
 def predict_image(model, detect_model, image, img_format):
-    boxes = utils.run_detect_image(detect_model, image)
+    boxes = ocr_detect.detect_img(detect_model, image)
     if len(boxes) == 0:
         return ''
 
@@ -127,7 +131,7 @@ def ocr_subtitle(model, detect_model, path, files, timecodes, auto_crop):
             lines.append('{}\n'.format(text))
             lines.append('\n')
         else:
-            lines.append(os.path.basename(img_file))
+            # lines.append(os.path.basename(img_file))
             lines.append(text)
             lines.append('\n')
 
@@ -213,29 +217,41 @@ def ocr(model, detect_model, path, auto_crop=True):
     return text, len(files)
 
 
+def load_detect_model(model_path):
+    print('loading saved ocr detection model from - {}'.format(model_path))
+    input_image = Input(shape=(None, None, 3), name='image', dtype=tf.float32)
+    region, affinity = VGG16_UNet(input_tensor=input_image, weights=None)
+    model = Model(inputs=[input_image], outputs=[region, affinity])
+    model.load_weights(model_path)
+    model._make_predict_function()
+
+    return model
+
+
 def load_ocr_model(export_dir):
     print('loading saved ocr model from - {}'.format(export_dir))
-    # Load model from export directory, and make a predict function.
     predict_fn = tf.contrib.predictor.from_saved_model(export_dir)
     return predict_fn
 
 
-def main():
-    ocr_detect_model_path = "./model/craft/weight.h5"
-    ocr_model_path = "./model/aocr"
-    path = "c:/tmp/sub"
-    # path = "C:/videosubfinder/RGBImages"
-    out_path = './sub.srt'
-    ocr_model = load_ocr_model(ocr_model_path)
-    detect_model = ocr_detect.load_detect_model(ocr_detect_model_path)
-    text, count = ocr(ocr_model, detect_model, path, auto_crop=False)
+def main(args):
+    ocr_model = load_ocr_model(args.r)
+    detect_model = load_detect_model(args.d)
+    text, count = ocr(ocr_model, detect_model, args.i, auto_crop=False)
     if count == 0:
         print('파일이 존재하지 않습니다.')
     else:
-        print(text)
-        with open(out_path, 'w', encoding='utf8') as f:
+        with open(args.o, 'w', encoding='utf8') as f:
             f.write(text)
+
+        print('OCR 인식 결과를 {} 파일로 저장했습니다.'.format(args.o))
 
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("-d", default="./model/craft/weight.h5", help="텍스트 검출 모델 경로")
+    parser.add_argument("-r", default="./model/aocr", help="텍스트 인식 모델 경로")
+    parser.add_argument("-i", required=True, help="이미지 경로")
+    parser.add_argument("-o", default="./sub.srt", help="출력 파일명")
+    args = parser.parse_args()
+    main(args)
