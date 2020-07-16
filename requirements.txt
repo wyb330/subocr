@@ -2,3 +2,6 @@ keras==2.2.4
 tqdm
 opencv-python
 bs4
+numpy
+scikit-image
+
