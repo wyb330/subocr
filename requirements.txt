@@ -3,5 +3,5 @@ tqdm
 opencv-python
 bs4
 numpy
-scikit-image
+requests
 

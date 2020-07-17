@@ -19,7 +19,8 @@ def load_image(img_path):
     :param img_path: Image file path, e.g. ``test.jpg`` or URL.
     :return: An RGB-image MxNx3.
     """
-    img = io.imread(img_path)
+    #img = io.imread(img_path)
+    img = cv2.imread(img_path)
     if img.shape[0] == 2:
         img = img[0]
     if len(img.shape) == 2:
