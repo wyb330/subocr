@@ -5,7 +5,6 @@
 
 import cv2
 import numpy as np
-from skimage import io
 from detection.utils.box_util import cal_affinity_boxes
 
 # RGB
@@ -19,7 +18,6 @@ def load_image(img_path):
     :param img_path: Image file path, e.g. ``test.jpg`` or URL.
     :return: An RGB-image MxNx3.
     """
-    #img = io.imread(img_path)
     img = cv2.imread(img_path)
     if img.shape[0] == 2:
         img = img[0]

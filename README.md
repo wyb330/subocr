@@ -3,11 +3,12 @@
 저장해주는 라이브러리입니다.
 
 ## **설치**
-python 3.6x 또는 python 3.7x 버전대 설치
+1. python 3.6x 또는 python 3.7x 버전대 설치
+2. 실행에 필요한 라이브러리 설치
 ```
 pip install -r requirements.txt
 ```
-### tensorflow 설치
+3. tensorflow 설치
 
  CPU를 사용하는 경우
 ```
@@ -21,7 +22,7 @@ pip install tensorflow-gpu==1.13.1
 GPU를 사용하는 경우 CUDA 9.x 와 CUDNN이 먼저 설치되어 있어야 합니다. 
 
 ### 학습 모델
-학습된 모델을 아래 링크에서 다운로드 받아서 압축을 풉니다.
+학습된 모델을 아래 링크에서 다운로드 받아서 소스가 있는 디렉토리(model 디렉토리)에 압축을 풉니다.
 경로가 아래의 옵션에 설정한 기본값과 다르다면 실행시 경로를 지정해 주어야 합니다.
 
 [학습모델 다운로드](https://drive.google.com/file/d/1-mIAqb6hUSSxKkzClr7oCCfG9MsKuxCn/view?usp=sharing)
@@ -32,6 +33,7 @@ python subocr.py -i imagepath -o outfile
 ```
 파일명이 타임코드 형식이거나 타임코드 정보를 담고있는 html 파일이 존재하면
 srt 자막으로 저장하고, 그렇지 않으면 일반 텍스트 파일로 저장합니다.
+
 VideoSubFinder 프로그램을 이용하면 자막이미지 파일명이 타임코드 형식으로 저장됩니다.
 Subtitle Edit에서 sub/idx 파일을 자막이미지과 타임코드 정보를 가진 html 파일로 저장할 수 있습니다.
 
