@@ -3,12 +3,25 @@ import io
 import numpy as np
 import cv2
 from PIL import Image, ImageDraw, ImageFont
-import requests
-import json
 import os
-
+import ocr_detect
+from keras.layers import Input
+from keras.models import Model
+from detection.net.vgg16 import VGG16_UNet
+import tensorflow as tf
 
 BINARY_THREHOLD = 180
+
+
+def extract_file_extension(file):
+    basename = os.path.basename(file)
+    return '.' + str(basename.split('.')[-1])
+
+
+def change_file_extension(file, new_ext):
+    parts = file.split('.')
+    parts[-1] = new_ext[1:]
+    return '.'.join(parts)
 
 
 def temp_filename():
@@ -126,22 +139,6 @@ class TensorflowCallError(Exception):
     pass
 
 
-def call_tf_serving(server_url, inputs):
-    data = {"inputs": inputs}
-
-    # Making POST request
-    headers = {"content-type": "application/json"}
-    json_response = requests.post(server_url, data=json.dumps(data), headers=headers)
-
-    # Decoding results from TensorFlow Serving server
-    json_text = json.loads(json_response.text)
-    if 'outputs' in json_text:
-        predictions = json_text['outputs']
-    else:
-        raise TensorflowCallError('TensorFlow Serving call failed. ' + json_response.text)
-    return predictions
-
-
 def save_box_images(filename, boxes, save_path):
     MARGIN = 2
     img = Image.open(filename)
@@ -173,4 +170,25 @@ def draw_image_text(filename, boxes, text):
     draw.multiline_text((left, top), text, font=font, fill='black')
 
     img.save(filename)
+
+
+def run_detect(detect_model, img_file):
+    return ocr_detect.detect(detect_model, img_file)
+
+
+def load_detect_model(model_path):
+    print('loading saved ocr detection model from - {}'.format(model_path))
+    input_image = Input(shape=(None, None, 3), name='image', dtype=tf.float32)
+    region, affinity = VGG16_UNet(input_tensor=input_image, weights=None)
+    model = Model(inputs=[input_image], outputs=[region, affinity])
+    model.load_weights(model_path)
+    model._make_predict_function()
+
+    return model
+
+
+def load_ocr_model(export_dir):
+    print('loading saved ocr model from - {}'.format(export_dir))
+    predict_fn = tf.contrib.predictor.from_saved_model(export_dir)
+    return predict_fn
 

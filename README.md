@@ -28,6 +28,7 @@ GPU를 사용하는 경우 CUDA 9.x 와 CUDNN이 먼저 설치되어 있어야 �
 [학습모델 다운로드](https://drive.google.com/file/d/1-mIAqb6hUSSxKkzClr7oCCfG9MsKuxCn/view?usp=sharing)
 
 ## **사용법**
+***멀티 이미지 OCR***
 ```
 python subocr.py -i imagepath -o outfile
 ```
@@ -46,6 +47,20 @@ Subtitle Edit에서 sub/idx 파일을 자막이미지과 타임코드 정보를 
   -i : 이미지 경로
   
   -o : 출력 파일명. 기본값은 "sub.srt" 
+
+***단일 이미지 OCR***
+```
+python ocr.py -i imagefile 
+```
+
+### 옵션
+  -d : 텍스트 검출 모델의 경로. 기본값은 "./model/craft/weight.h5"
+  
+  -r : 텍스트 인식 모델 경로. 기본값은 "./model/aocr"
+  
+  -i : 이미지 파일명
+  
+  -o : OCR 인식결과 이미지 파일명. 값을 저장하지 않으면 OCR 이미지를 저장하지 않는다. 
   
 ## **학습**
 이미 학습된 모델말고 자신만의 데이터로 모델을 학습하고자 하는 경우

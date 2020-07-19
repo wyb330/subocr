@@ -4,14 +4,10 @@ import utils
 import re
 from bs4 import BeautifulSoup
 import cv2
-from utils import cv2pil, sub_image
+from utils import cv2pil, sub_image, load_ocr_model, load_detect_model
 import ocr_detect
 import tqdm
-import tensorflow as tf
 from argparse import ArgumentParser
-from keras.layers import Input
-from keras.models import Model
-from detection.net.vgg16 import VGG16_UNet
 
 MARGIN = 8
 VOBTIMECODE1 = '(#\d+:)(\d+:*\d+,\d+->\d+:\d+,\d+)(.)*'
@@ -215,23 +211,6 @@ def ocr(model, detect_model, path, auto_crop=True):
     finally:
         pass
     return text, len(files)
-
-
-def load_detect_model(model_path):
-    print('loading saved ocr detection model from - {}'.format(model_path))
-    input_image = Input(shape=(None, None, 3), name='image', dtype=tf.float32)
-    region, affinity = VGG16_UNet(input_tensor=input_image, weights=None)
-    model = Model(inputs=[input_image], outputs=[region, affinity])
-    model.load_weights(model_path)
-    model._make_predict_function()
-
-    return model
-
-
-def load_ocr_model(export_dir):
-    print('loading saved ocr model from - {}'.format(export_dir))
-    predict_fn = tf.contrib.predictor.from_saved_model(export_dir)
-    return predict_fn
 
 
 def main(args):
