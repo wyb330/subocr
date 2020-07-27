@@ -8,7 +8,7 @@ FONT_SIZE = 14
 LINE_HEIGHT = 10
 
 
-def predict_image(model, detect_model, image_file, result_path):
+def predict_image(model, detect_model, image_file, result_path=None):
     '''
     :param model: 텍스트 인식 모델
     :param detect_model: 텍스트 검출 모델
@@ -70,6 +70,7 @@ def predict_image(model, detect_model, image_file, result_path):
 
     boxes = run_detect(detect_model, image_file)
     if len(boxes) == 0:
+        print('텍스트 검출 실패: {}'.format(os.path.basename(image_file)))
         return ''
 
     if image_file.lower().endswith('.png'):
@@ -117,9 +118,14 @@ def ocr(model, detect_model, image_file, result_path=None):
 
 
 def main(args):
+    if not allowed_image_file(args.i):
+        print('이미지 파일이 아니거나 지원하지 않는 이미지 형식입니다.')
+        return
     ocr_model = load_ocr_model(args.r)
     detect_model = load_detect_model(args.d)
     text = ocr(ocr_model, detect_model, args.i, result_path=args.o)
+    # OCR 인식 결과를 교정한다.
+    text = ocr_correction(text, 'correction.json')
     print(text)
 
 

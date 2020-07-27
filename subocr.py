@@ -1,13 +1,11 @@
-import os
 import glob
-import utils
 import re
 from bs4 import BeautifulSoup
-import cv2
-from utils import cv2pil, sub_image, load_ocr_model, load_detect_model
-import ocr_detect
+from utils import *
+from ocr import predict_image
 import tqdm
 from argparse import ArgumentParser
+
 
 MARGIN = 8
 VOBTIMECODE1 = '(#\d+:)(\d+:*\d+,\d+->\d+:\d+,\d+)(.)*'
@@ -15,59 +13,8 @@ VOBTIMECODE2 = '(#\d+:)(\d+:\d+:*\d+,\d+->\d+:\d+:\d+,\d+)(.)*'
 VOBTIMECODE3 = '(#\d+:)(\d+,\d+->\d+,\d+)(.)*'
 
 
-def predict_image(model, detect_model, image, img_format):
-    boxes = ocr_detect.detect_img(detect_model, image)
-    if len(boxes) == 0:
-        return ''
-
-    prev_center = 0
-    boxes = utils.adjust_position(boxes)
-    eol_list = []
-    img_list = []
-    img = cv2pil(image)
-    for i, box in enumerate(boxes):
-        left, top, right, bottom, center = box[1:6]
-        img_crop = img.crop([left - MARGIN, top - MARGIN, right + MARGIN, bottom + MARGIN])
-
-        img_list.append(utils.img2bytes(img_crop, format=img_format))
-        if (prev_center > 0) and (center != prev_center):
-            eol_list.append(True)
-        else:
-            eol_list.append(False)
-        prev_center = center
-
-    words = []
-    predictions = model({'input': img_list})
-
-    if (type(predictions['output']) is bytes) or (type(predictions['output']) is str):
-        word = predictions['output'] if type(predictions['output']) is str else predictions['output'].decode('utf8')
-        words.append(word)
-    else:
-        for output, eol in zip(predictions['output'], eol_list):
-            word = output if type(output) is str else output.decode('utf8')
-            if eol:
-                words.append('\n' + word)
-            else:
-                words.append(word)
-
-    text = ' '.join(words)
-    return text
-
-
 def predict_file(model, detect_model, image_file, auto_crop=True):
-    image = cv2.imread(image_file)
-    if auto_crop:
-        # 이미지에서 자막 영역만 잘라낸다.(하단 250 픽셀)
-        (height, width) = image.shape[:2]
-        if height > 250:
-            subtitle_rect = [0, height - 250, width, height]
-            image = sub_image(image, subtitle_rect)
-    if image_file.lower().endswith('.png'):
-        img_format = 'PNG'
-    else:
-        img_format = 'JPEG'
-
-    text = predict_image(model, detect_model, image, img_format)
+    text = predict_image(model, detect_model, image_file)
     return text
 
 
@@ -107,10 +54,6 @@ def filename2timecode(file):
     return '{} --> {}'.format(start, end)
 
 
-def allowed_image_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['png', 'jpg', 'jpeg']
-
-
 def ocr_subtitle(model, detect_model, path, files, timecodes, auto_crop):
     line_id = 1
     lines = []
@@ -127,7 +70,6 @@ def ocr_subtitle(model, detect_model, path, files, timecodes, auto_crop):
             lines.append('{}\n'.format(text))
             lines.append('\n')
         else:
-            # lines.append(os.path.basename(img_file))
             lines.append(text)
             lines.append('\n')
 
@@ -217,6 +159,8 @@ def main(args):
     ocr_model = load_ocr_model(args.r)
     detect_model = load_detect_model(args.d)
     text, count = ocr(ocr_model, detect_model, args.i, auto_crop=False)
+    # OCR 인식 결과를 교정한다.
+    text = ocr_correction(text, 'correction.json')
     if count == 0:
         print('파일이 존재하지 않습니다.')
     else:

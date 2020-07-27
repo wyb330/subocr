@@ -15,7 +15,7 @@ FLAGS = CraftFlags(trained_model='./model/craft/weight.h5',
                    text_threshold=0.7,
                    low_text=0.4,
                    link_threshold=0.4,
-                   canvas_size=1920,
+                   canvas_size=5000,  # 이미지의 최대 크기
                    image_file='')
 
 
@@ -27,7 +27,7 @@ def predict(model, image):
     if (h < 10) or (w < 10):
         return [], []
     mag_ratio = 1
-    img_resized, target_ratio = img_resize(image, mag_ratio, min(FLAGS.canvas_size, w), interpolation=cv2.INTER_LINEAR)
+    img_resized, target_ratio = img_resize(image, mag_ratio, min(FLAGS.canvas_size, max(w, h)), interpolation=cv2.INTER_LINEAR)
     ratio_h = ratio_w = 1 / target_ratio
 
     # preprocessing

@@ -9,6 +9,7 @@ from keras.layers import Input
 from keras.models import Model
 from detection.net.vgg16 import VGG16_UNet
 import tensorflow as tf
+import json
 
 BINARY_THREHOLD = 180
 
@@ -192,3 +193,28 @@ def load_ocr_model(export_dir):
     predict_fn = tf.contrib.predictor.from_saved_model(export_dir)
     return predict_fn
 
+
+def allowed_image_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['png', 'jpg', 'jpeg']
+
+
+def ocr_correction(text, json_file):
+    '''
+    OCR 인식 결과 교정
+    :param text: OCR 인식 결과 텍스트
+    :param json_file: 교정 사전
+    :return: 교정된 OCR 텍스트
+    '''
+    results = []
+    with open(json_file, 'r', encoding='utf8') as f:
+        d = json.load(f)
+        lines = text.split('\n')
+        for line in lines:
+            words = line.split()
+            line_c = []
+            for w in words:
+                t = d[w] if w in d else w
+                line_c.append(t)
+            results.append(' '.join(line_c))
+
+    return '\n'.join(results)
